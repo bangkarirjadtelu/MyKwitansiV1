@@ -42,11 +42,11 @@ const HEADERS = [
 
 const EMPTY_FORM: CreateFormulirTransaksiInput = {
   tanggal_transaksi: "",
-  terima_dari:       "",
+  terima_dari:       "Universitas Telkom",
   jumlah_uang:       0,
   untuk_pembayaran:  "",
-  penerima_uang:     "",
-  kota:              "Jakarta",
+  penerima_uang:     "Toufan Tambunan",
+  kota:              "Bandung",
   total_harga:       0,
 };
 
