@@ -26,13 +26,13 @@ const HEADERS = [
 
 const EMPTY_FORM: CreateFormulirUndanganInput = {
   acara: "",
-  penyelenggara: "",
+  penyelenggara: "Kabag Bang SDM",
   tanggal_acara: "",
   waktu_mulai: "",
   waktu_selesai: "",
-  tempat_acara: "",
+  tempat_acara: "Ruang Rapat SDM Lantai 2 Gedung E. Kultubai Utara",
   agenda: "",
-  peserta: "",
+  peserta: "Kabag Bang SDM, Tim Bang Karir",
   dokumen_pendukung: "",
   hasil_pertemuan: "",
   tembusan: "",
