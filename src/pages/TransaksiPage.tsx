@@ -13,7 +13,7 @@
  * Business/data logic stays in transactionService.
  * This component manages UI state only.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { tokens } from "../styles/tokens";
 import { Ico } from "../utils/icons";
 import { formatRp, formatAdminName, formatDocumentNumber, formatCurrencyInput, parseCurrencyInput, formatDateInput, terbilang, formatDateNoDay } from "../utils/formatters";
@@ -22,6 +22,8 @@ import {
   CardToolbar, TableControls, DataTable, Td,
 } from "../components/ui";
 import { transactionService, printService, pdfService } from "../services";
+
+const KwitansiPdfPreview = lazy(() => import("../components/KwitansiPdfPreview"));
 import { useAuth } from "../contexts/AuthContext";
 import type { DataTransaksiView, CreateFormulirTransaksiInput } from "../types";
 
@@ -426,95 +428,32 @@ export function TransaksiPage({ onToast }: TransaksiPageProps) {
         </Modal>
       )}
 
-      {/* ── View Modal (Read-Only) ─────────────────────────────────────────── */}
+      {/* ── View / Preview Modal ─────────────────────────────────────────── */}
       {viewTarget && (
-        <Modal title="Detail Kwitansi (Dari Transaksi)" onClose={() => setViewTarget(null)} wide>
-          <div className="w-full overflow-hidden flex justify-center">
-            <style>{`
-              .kwitansi-zoom { width: 520px; max-width: none; }
-              @media (max-width: 600px) { .kwitansi-zoom { zoom: 0.8; } }
-              @media (max-width: 480px) { .kwitansi-zoom { zoom: 0.65; } }
-              @media (max-width: 380px) { .kwitansi-zoom { zoom: 0.55; } }
-            `}</style>
-            <div className="kwitansi-zoom p-4 relative text-sm font-sans">
-
-              {/* Title */}
-              <div className="text-center border-b-2 border-black pb-3 mb-5">
-                <h2 className="text-base font-bold tracking-widest text-black">KWITANSI PEMBAYARAN</h2>
-              </div>
-
-              {/* Rows */}
-              <div className="space-y-3">
-                {[
-                  { label: "No Kwitansi",      value: "",                                                 bold: true },
-                  { label: "Diterima Dari",    value: viewTarget.terima_dari,                             bold: false },
-                  { label: "Terbilang",        value: terbilang(viewTarget.jumlah_uang) + " Rupiah",      bold: true },
-                  { label: "Untuk Pembayaran", value: viewTarget.untuk_pembayaran,                        bold: false },
-                ].map((row) => (
-                  <div key={row.label} className="flex gap-4 items-end">
-                    <span className="text-[11px] text-gray-500 font-normal text-right flex-shrink-0 pb-1" style={{ width: 130 }}>
-                      {row.label}
-                    </span>
-                    <span className={`flex-1 text-[12px] text-black border-b border-gray-400 pb-1 pl-1 ${row.bold ? "font-bold" : "font-normal"}`}>
-                      {row.value}
-                    </span>
+        <Modal
+          title="Detail Kwitansi (Dari Transaksi)"
+          onClose={() => setViewTarget(null)}
+          wide
+        >
+          <div className="h-[75vh] mt-4 flex flex-col">
+            <div className="flex-1 border border-gray-200">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Memuat Preview PDF...
                   </div>
-                ))}
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between mt-7">
-                {/* Amount */}
-                <div className="flex items-center border-y border-black py-1.5 w-44">
-                  <span className="text-[11px] text-gray-600 font-normal mr-1 ml-1">Rp</span>
-                  <span className="text-sm font-bold text-black">
-                    {formatRp(viewTarget.jumlah_uang).replace("Rp ", "")}
-                  </span>
-                </div>
-
-                {/* Signature */}
-                <div className="flex flex-col items-center" style={{ width: 170 }}>
-                  <span className="text-[10px] text-gray-600 font-normal mb-1">
-                    {viewTarget.kota}, {formatDateNoDay(viewTarget.tanggal_transaksi)}
-                  </span>
-                  <div className="w-full border-b border-gray-500" />
-
-                  {/* Materai box jika >= 5 juta */}
-                  {viewTarget.jumlah_uang >= 5_000_000 ? (
-                    <div className="my-2.5 flex justify-center">
-                      <div className="border border-dashed border-gray-400 flex items-center justify-center text-center"
-                        style={{ width: 70, height: 50 }}>
-                        <span className="text-[7px] text-gray-400 leading-tight">Materai<br/>Rp 10.000</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ height: 56 }} />
-                  )}
-
-                  <div className="w-full border-b border-gray-500 mb-1" />
-                  <span className="text-[11px] font-bold text-black text-center truncate w-full">
-                    {viewTarget.penerima_uang}
-                  </span>
-                </div>
-              </div>
+                }
+              >
+                <KwitansiPdfPreview data={viewTarget} />
+              </Suspense>
             </div>
-          </div>
 
-          <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <OutlineBtn onClick={() => setViewTarget(null)}>
-              Tutup
-            </OutlineBtn>
-            <div className="hidden md:block">
+            <div className="mt-4 flex justify-end gap-3 pt-4 border-t border-gray-100 shrink-0">
+              <OutlineBtn onClick={() => setViewTarget(null)}>Tutup</OutlineBtn>
               <OutlineBtn onClick={() => pdfService.downloadKwitansiPdf(viewTarget)}>
                 {Ico.download()} Download PDF
               </OutlineBtn>
             </div>
-            <PrimaryBtn
-              className="!bg-blue-600 hover:!bg-blue-700 !border-blue-600 px-6"
-              onClick={() => pdfService.downloadKwitansiPdf(viewTarget)}
-            >
-              {Ico.download()} Save PDF
-            </PrimaryBtn>
           </div>
         </Modal>
       )}

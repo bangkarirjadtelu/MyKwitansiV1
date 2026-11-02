@@ -4,7 +4,7 @@
  * adminId: read from AuthContext — removes the old adminId prop.
  * Visual design and business logic unchanged.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { tokens } from "../styles/tokens";
 import { formatRp, terbilang, CURRENT_YEAR, formatDocumentNumber, formatAdminName, formatCurrencyInput, formatDateInput } from "../utils/formatters";
 import { Ico } from "../utils/icons";
@@ -13,6 +13,8 @@ import {
   CardToolbar, TableControls, DataTable, Td,
 } from "../components/ui";
 import { transactionService, printService, pdfService } from "../services";
+
+const KwitansiPdfPreview = lazy(() => import("../components/KwitansiPdfPreview"));
 import { useAuth } from "../contexts/AuthContext";
 import type { DataTransaksiView } from "../types";
 
@@ -172,73 +174,25 @@ export function KwitansiPage() {
 
       {preview && (
         <Modal title="Detail Kwitansi" onClose={() => setPreview(null)} wide>
-          <div className="w-full overflow-hidden flex justify-center">
-            <style>{`
-              .kwitansi-zoom { width: 550px; max-width: none; }
-              @media (max-width: 600px) { .kwitansi-zoom { zoom: 0.8; } }
-              @media (max-width: 480px) { .kwitansi-zoom { zoom: 0.65; } }
-              @media (max-width: 380px) { .kwitansi-zoom { zoom: 0.55; } }
-            `}</style>
-            <div className="kwitansi-zoom p-2 relative text-sm">
-              <h2 className="text-center text-lg font-bold tracking-wide text-black mb-6">KWITANSI PEMBAYARAN</h2>
-            
-            <div className="space-y-4">
-              {[
-                { label: "No Kwitansi",      value: formatDocumentNumber(preview.id_data_transaksi) },
-                { label: "Diterima Dari",    value: preview.terima_dari },
-                { label: "Terbilang",        value: terbilang(preview.jumlah_uang) + " Rupiah" },
-                { label: "Untuk Pembayaran", value: preview.untuk_pembayaran },
-              ].map((row) => (
-                <div key={row.label} className="flex gap-4 items-end">
-                  <span className="text-sm font-bold text-black text-right flex-shrink-0 pb-1" style={{ width: 140 }}>
-                    {row.label}
-                  </span>
-                  <span className="flex-1 text-sm font-bold text-black border-b border-black pb-1">
-                    {row.value}
-                  </span>
-                </div>
-              ))}
+          <div className="h-[75vh] mt-4 flex flex-col">
+            <div className="flex-1 border border-gray-200">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Memuat Preview PDF...
+                  </div>
+                }
+              >
+                <KwitansiPdfPreview data={preview} />
+              </Suspense>
             </div>
 
-            <div className="flex items-end justify-between mt-8">
-              <div className="flex items-center w-48 border-y border-black py-2">
-                <span className="text-sm font-bold text-black mr-2">Rp</span>
-                <span className="text-base font-bold text-black">
-                  {formatRp(preview.jumlah_uang).replace("Rp ", "")}
-                </span>
-              </div>
-              
-              <div className="flex flex-col items-center w-48">
-                <span className="text-xs font-bold text-black mb-1">
-                  {preview.kota} , {preview.tanggal_transaksi}
-                </span>
-                <div className="w-full border-b border-black mb-12" />
-                <div className="w-full border-b border-black mb-1" />
-                <span className="text-xs font-bold text-black text-center truncate w-full">
-                  {preview.penerima_uang}
-                </span>
-              </div>
-            </div>
-            </div>
-          </div>
-            
-          <div className="mt-8 flex justify-end gap-3 pt-4">
-            <OutlineBtn onClick={() => setPreview(null)}>
-              Tutup
-            </OutlineBtn>
-            
-            <div className="hidden md:block">
+            <div className="mt-4 flex justify-end gap-3 pt-4 border-t border-gray-100 shrink-0">
+              <OutlineBtn onClick={() => setPreview(null)}>Tutup</OutlineBtn>
               <OutlineBtn onClick={handleDownloadPdf}>
                 {Ico.download()} Download PDF
               </OutlineBtn>
             </div>
-            
-            <PrimaryBtn
-              onClick={handleDownloadPdf}
-              className="!bg-blue-600 hover:!bg-blue-700 !border-blue-600 px-6"
-            >
-              {Ico.download()} Save PDF
-            </PrimaryBtn>
           </div>
         </Modal>
       )}
