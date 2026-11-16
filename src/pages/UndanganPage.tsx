@@ -58,6 +58,7 @@ export default function UndanganPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
   const [formData, setFormData] = useState<CreateFormulirUndanganInput>(EMPTY_FORM);
 
   // Delete modal state
@@ -130,6 +131,7 @@ export default function UndanganPage() {
   const openCreate = () => {
     setFormError("");
     setEditingId(null);
+    setIsDuplicate(false);
     setFormData({
       ...EMPTY_FORM,
       nama_ttd: localStorage.getItem("mykwitansi_undangan_nama_ttd") || "",
@@ -142,8 +144,33 @@ export default function UndanganPage() {
   const openEdit = (row: DataUndanganView) => {
     setFormError("");
     setEditingId(row.id_formulir_undangan);
+    setIsDuplicate(false);
     setFormData({
       ...row
+    });
+    setIsFormOpen(true);
+  };
+
+  const openDuplicate = (row: DataUndanganView) => {
+    setFormError("");
+    setEditingId(null);
+    setIsDuplicate(true);
+    setFormData({
+      acara: row.acara,
+      penyelenggara: row.penyelenggara,
+      tanggal_acara: row.tanggal_acara,
+      waktu_mulai: row.waktu_mulai,
+      waktu_selesai: row.waktu_selesai,
+      tempat_acara: row.tempat_acara,
+      agenda: row.agenda || "",
+      peserta: row.peserta || "",
+      dokumen_pendukung: row.dokumen_pendukung || "",
+      hasil_pertemuan: row.hasil_pertemuan || "",
+      tembusan: row.tembusan || "",
+      tempat_surat: row.tempat_surat || "Bandung",
+      tanggal_surat: row.tanggal_surat || "",
+      nama_ttd: row.nama_ttd || "",
+      jabatan_ttd: row.jabatan_ttd || "",
     });
     setIsFormOpen(true);
   };
@@ -335,6 +362,14 @@ export default function UndanganPage() {
                     {Ico.receipt()}
                   </button>
                   <button
+                    onClick={(e) => { e.stopPropagation(); openDuplicate(row); }}
+                    title="Duplikat Undangan"
+                    className="inline-flex items-center justify-center p-1.5 rounded-md text-xs font-semibold
+                      border border-blue-200 text-blue-600 bg-transparent transition-colors duration-100 hover:bg-blue-50"
+                  >
+                    {Ico.copy()}
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); openEdit(row); }}
                     title="Edit Undangan"
                     className="inline-flex items-center justify-center p-1.5 rounded-md text-xs font-semibold
@@ -369,14 +404,20 @@ export default function UndanganPage() {
         </DataTable>
       </Card>
 
-      {/* CREATE / EDIT MODAL */}
+      {/* CREATE / EDIT / DUPLICATE MODAL */}
       {isFormOpen && (
         <Modal
           onClose={() => setIsFormOpen(false)}
-          title={editingId ? "Edit Undangan" : "Tambah Undangan"}
+          title={editingId ? "Edit Undangan" : isDuplicate ? "Duplikat Undangan" : "Tambah Undangan"}
           wide
         >
           <div className="space-y-4 pt-4">
+          {isDuplicate && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3.5 py-2.5 rounded-lg text-xs flex items-center gap-2">
+              <span className="font-bold">Mode Duplikat:</span>
+              <span>Data otomatis terisi dari undangan sebelumnya. Silakan ubah tanggal, jam, atau detail lainnya sesuai kebutuhan.</span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Acara" value={formData.acara} onChange={(val) => setFormData({ ...formData, acara: val })} error={formError && !formData.acara ? "Wajib diisi" : undefined} />
             <FormField label="Penyelenggara" value={formData.penyelenggara} onChange={(val) => setFormData({ ...formData, penyelenggara: val })} />
@@ -422,7 +463,7 @@ export default function UndanganPage() {
             <div className="flex gap-3">
               <OutlineBtn onClick={() => setIsFormOpen(false)}>Batal</OutlineBtn>
               <PrimaryBtn onClick={handleFormSubmit}>
-                {editingId ? "Simpan Perubahan" : "Simpan Data"}
+                {editingId ? "Simpan Perubahan" : isDuplicate ? "Simpan Undangan Baru (Duplikat)" : "Simpan Data"}
               </PrimaryBtn>
             </div>
           </div>
