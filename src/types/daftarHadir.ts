@@ -28,3 +28,14 @@ export interface DaftarHadirData {
   peserta:      DaftarHadirPeserta[];
   isSimulation: boolean;
 }
+
+export interface DaftarHadirRecord {
+  id:             string;
+  nomor_dokumen:  string; // e.g. "0001"
+  agenda:         DaftarHadirAgenda;
+  peserta:        DaftarHadirPeserta[];
+  admin_username: string;
+  created_at:     string; // ISO date string
+  isSimulation?:  boolean;
+}
+
