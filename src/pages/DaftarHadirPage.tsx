@@ -68,32 +68,111 @@ function extractDateStr(hariTanggal: string): string {
   return hariTanggal.trim() || "15 Oktober 2026";
 }
 
-function generateCheckinTime(dateStr: string, startTime: string, index: number, total: number): string {
-  let startHour = 8;
-  let startMinute = 0;
-
+function parseStartTime(startTime: string): { hour: number; minute: number } {
+  let hour = 8;
+  let minute = 0;
   if (startTime) {
-    const cleanTime = startTime.replace(/[^\d:]/g, "");
+    const cleanTime = startTime.trim().replace(/[^\d:.]/g, "");
     const parts = cleanTime.includes(":") ? cleanTime.split(":") : cleanTime.split(".");
     if (parts.length >= 2) {
       const h = parseInt(parts[0], 10);
       const m = parseInt(parts[1], 10);
-      if (!isNaN(h)) startHour = h;
-      if (!isNaN(m)) startMinute = m;
+      if (!isNaN(h)) hour = Math.max(0, Math.min(23, h));
+      if (!isNaN(m)) minute = Math.max(0, Math.min(59, m));
+    } else if (parts.length === 1 && parts[0].length >= 3) {
+      const h = parseInt(parts[0].slice(0, 2), 10);
+      const m = parseInt(parts[0].slice(2), 10);
+      if (!isNaN(h)) hour = Math.max(0, Math.min(23, h));
+      if (!isNaN(m)) minute = Math.max(0, Math.min(59, m));
     }
   }
+  return { hour, minute };
+}
 
-  const baseMinutesOffset = 25 + Math.floor((index / Math.max(total, 1)) * 16);
-  const jitterMinute = (index * 7 + (index % 3) * 2) % 15;
-  const totalOffsetMinutes = baseMinutesOffset + jitterMinute;
+/**
+ * Generates check-in timestamps strictly within [startTime, startTime + 10 menit] (max 600s).
+ * "maksimal rangenya waktu mulai sampai dengan 10 menit setelah itu, ga boleh lebih yang penting beda detik beda apa gitu"
+ */
+function generateCheckinTimes(
+  dateStr: string,
+  startTime: string,
+  total: number,
+  randomize = false
+): string[] {
+  if (total <= 0) return [];
+  const { hour: startHour, minute: startMinute } = parseStartTime(startTime);
 
-  const totalMinutes = startHour * 60 + startMinute + totalOffsetMinutes;
-  const checkHour = Math.floor(totalMinutes / 60) % 24;
-  const checkMinute = totalMinutes % 60;
-  const checkSecond = (12 + index * 17 + (index % 5) * 7) % 60;
+  // Maximum allowed seconds offset is 585s (9 minutes 45 seconds, strictly <= 600s / 10 minutes)
+  const minOffsetSec = 15;
+  const maxOffsetSec = 585;
+
+  const usedSeconds = new Set<number>();
+  const secondsList: number[] = [];
+
+  for (let i = 0; i < total; i++) {
+    const progress = total === 1 ? 0.35 : i / Math.max(total - 1, 1);
+    const baseSec = minOffsetSec + progress * (maxOffsetSec - minOffsetSec);
+
+    let jitter = 0;
+    if (randomize) {
+      jitter = Math.floor(Math.random() * 30) - 15;
+    } else {
+      jitter = ((i * 31 + (i % 5) * 17) % 27) - 13;
+    }
+
+    let sec = Math.round(baseSec + jitter);
+    sec = Math.max(minOffsetSec, Math.min(maxOffsetSec, sec));
+
+    // Ensure distinct seconds
+    let step = 1;
+    while (usedSeconds.has(sec)) {
+      if (sec + step <= maxOffsetSec && !usedSeconds.has(sec + step)) {
+        sec += step;
+        break;
+      }
+      if (sec - step >= minOffsetSec && !usedSeconds.has(sec - step)) {
+        sec -= step;
+        break;
+      }
+      step++;
+      if (step > 60) break;
+    }
+
+    usedSeconds.add(sec);
+    secondsList.push(sec);
+  }
+
+  // Sort chronologically so attendance checkin progresses naturally
+  secondsList.sort((a, b) => a - b);
 
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${dateStr}, ${pad(checkHour)}:${pad(checkMinute)}:${pad(checkSecond)}`;
+
+  return secondsList.map((sec) => {
+    const totalMinutes = startHour * 60 + startMinute + Math.floor(sec / 60);
+    const checkHour = Math.floor(totalMinutes / 60) % 24;
+    const checkMinute = totalMinutes % 60;
+    const checkSecond = sec % 60;
+    return `${dateStr}, ${pad(checkHour)}:${pad(checkMinute)}:${pad(checkSecond)}`;
+  });
+}
+
+function generateSingleCheckinTime(
+  dateStr: string,
+  startTime: string,
+  index: number,
+  total: number
+): string {
+  const times = generateCheckinTimes(dateStr, startTime, Math.max(total, index + 1));
+  return times[index] || times[times.length - 1];
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 export function DaftarHadirPage({ onToast }: Props) {
@@ -183,11 +262,12 @@ export function DaftarHadirPage({ onToast }: Props) {
 
     const dateStr = extractDateStr(DEFAULT_AGENDA.hariTanggal);
     const lines = DEFAULT_NAMES_TEXT.split("\n");
+    const times = generateCheckinTimes(dateStr, DEFAULT_AGENDA.waktuMulai || "08.00", lines.length, false);
     const initPeserta: DaftarHadirPeserta[] = lines.map((name, idx) => ({
       id: `p-${idx + 1}`,
       nomor: idx + 1,
       nama: name,
-      tanggalCheckin: generateCheckinTime(dateStr, DEFAULT_AGENDA.waktuMulai || "08.00", idx, lines.length),
+      tanggalCheckin: times[idx],
       status: "CheckIn",
     }));
     setFormPeserta(initPeserta);
@@ -217,7 +297,7 @@ export function DaftarHadirPage({ onToast }: Props) {
     setIsFormOpen(true);
   };
 
-  // Form: handle time change
+  // Form: handle time change (syncs check-in times to new start time)
   const handleTimeChange = (type: "waktuMulai" | "waktuSelesai", val: string) => {
     setFormAgenda((prev) => {
       const next = { ...prev, [type]: val };
@@ -226,6 +306,33 @@ export function DaftarHadirPage({ onToast }: Props) {
       next.waktu = `${m.replace(":", ".")} - ${s.replace(":", ".")} WIB`;
       return next;
     });
+
+    if (type === "waktuMulai" && formPeserta.length > 0) {
+      const dateStr = extractDateStr(formAgenda.hariTanggal);
+      const times = generateCheckinTimes(dateStr, val, formPeserta.length, false);
+      setFormPeserta((prev) =>
+        prev.map((p, idx) => ({
+          ...p,
+          tanggalCheckin: times[idx] || p.tanggalCheckin,
+        }))
+      );
+    }
+  };
+
+  // Form: handle date change (syncs check-in date)
+  const handleHariTanggalChange = (val: string) => {
+    setFormAgenda((prev) => ({ ...prev, hariTanggal: val }));
+    if (formPeserta.length > 0) {
+      const dateStr = extractDateStr(val);
+      const startTime = formAgenda.waktuMulai || "08.00";
+      const times = generateCheckinTimes(dateStr, startTime, formPeserta.length, false);
+      setFormPeserta((prev) =>
+        prev.map((p, idx) => ({
+          ...p,
+          tanggalCheckin: times[idx] || p.tanggalCheckin,
+        }))
+      );
+    }
   };
 
   // Form: process bulk names
@@ -247,12 +354,13 @@ export function DaftarHadirPage({ onToast }: Props) {
 
     const dateStr = extractDateStr(formAgenda.hariTanggal);
     const startTime = formAgenda.waktuMulai || "08.00";
+    const times = generateCheckinTimes(dateStr, startTime, lines.length, false);
 
     const newPeserta: DaftarHadirPeserta[] = lines.map((name, idx) => ({
       id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
       nomor: idx + 1,
       nama: name,
-      tanggalCheckin: generateCheckinTime(dateStr, startTime, idx, lines.length),
+      tanggalCheckin: times[idx],
       status: "CheckIn",
     }));
 
@@ -260,18 +368,74 @@ export function DaftarHadirPage({ onToast }: Props) {
     onToast?.(`Berhasil memproses ${newPeserta.length} peserta.`);
   };
 
-  // Form: reshuffle checkin times
-  const handleRegenerateTimes = () => {
+  // Form: shuffle names from bulk paste textarea
+  const handleShuffleBulkNames = () => {
+    const lines = formBulkText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length <= 1) {
+      onToast?.("Minimal butuh 2 nama peserta untuk diacak.");
+      return;
+    }
+
+    const shuffled = shuffleArray(lines);
+    setFormBulkText(shuffled.join("\n"));
+
     const dateStr = extractDateStr(formAgenda.hariTanggal);
     const startTime = formAgenda.waktuMulai || "08.00";
+    const times = generateCheckinTimes(dateStr, startTime, shuffled.length, true);
+
+    const newPeserta: DaftarHadirPeserta[] = shuffled.map((name, idx) => ({
+      id: `p-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 5)}`,
+      nomor: idx + 1,
+      nama: name,
+      tanggalCheckin: times[idx],
+      status: "CheckIn",
+    }));
+
+    setFormPeserta(newPeserta);
+    onToast?.(`Urutan ${shuffled.length} nama peserta berhasil diacak!`);
+  };
+
+  // Form: shuffle participants in table
+  const handleShufflePesertaTable = () => {
+    if (formPeserta.length <= 1) {
+      onToast?.("Minimal butuh 2 nama peserta untuk diacak.");
+      return;
+    }
+
+    const shuffled = shuffleArray(formPeserta);
+    const dateStr = extractDateStr(formAgenda.hariTanggal);
+    const startTime = formAgenda.waktuMulai || "08.00";
+    const times = generateCheckinTimes(dateStr, startTime, shuffled.length, true);
+
+    const reordered: DaftarHadirPeserta[] = shuffled.map((p, idx) => ({
+      ...p,
+      nomor: idx + 1,
+      tanggalCheckin: times[idx],
+    }));
+
+    setFormPeserta(reordered);
+    setFormBulkText(reordered.map((p) => p.nama).join("\n"));
+    onToast?.(`Urutan nama peserta berhasil diacak!`);
+  };
+
+  // Form: reshuffle checkin times (strictly within 0-10 minutes from start time)
+  const handleRegenerateTimes = () => {
+    if (formPeserta.length === 0) return;
+    const dateStr = extractDateStr(formAgenda.hariTanggal);
+    const startTime = formAgenda.waktuMulai || "08.00";
+    const times = generateCheckinTimes(dateStr, startTime, formPeserta.length, true);
 
     setFormPeserta((prev) =>
       prev.map((p, idx) => ({
         ...p,
-        tanggalCheckin: generateCheckinTime(dateStr, startTime, idx, prev.length),
+        tanggalCheckin: times[idx] || p.tanggalCheckin,
       }))
     );
-    onToast?.("Waktu check-in peserta berhasil diacak ulang.");
+    onToast?.("Waktu check-in peserta berhasil diacak ulang (rentang 0-10 menit dari waktu mulai).");
   };
 
   // Save form
@@ -605,7 +769,7 @@ export function DaftarHadirPage({ onToast }: Props) {
                   <input
                     type="text"
                     value={formAgenda.hariTanggal}
-                    onChange={(e) => setFormAgenda({ ...formAgenda, hariTanggal: e.target.value })}
+                    onChange={(e) => handleHariTanggalChange(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#8B1E1E]"
                     placeholder="Contoh: Jumat, 15 Oktober 2026"
                   />
@@ -733,7 +897,39 @@ export function DaftarHadirPage({ onToast }: Props) {
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">
                       2. Tempel Nama Peserta (Bulk Paste)
                     </h4>
-                    <span className="text-[11px] text-gray-500 font-mono">1 baris = 1 nama</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleShuffleBulkNames}
+                        className="inline-flex items-center gap-1 text-[11px] text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer"
+                        title="Acak urutan nama peserta"
+                      >
+                        {Ico.shuffle("w-3 h-3")}
+                        <span>Acak Nama</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormBulkText(DEFAULT_NAMES_TEXT);
+                          const dateStr = extractDateStr(formAgenda.hariTanggal);
+                          const startTime = formAgenda.waktuMulai || "08.00";
+                          const lines = DEFAULT_NAMES_TEXT.split("\n");
+                          const times = generateCheckinTimes(dateStr, startTime, lines.length, false);
+                          setFormPeserta(
+                            lines.map((name, idx) => ({
+                              id: `p-${idx + 1}`,
+                              nomor: idx + 1,
+                              nama: name,
+                              tanggalCheckin: times[idx],
+                              status: "CheckIn",
+                            }))
+                          );
+                        }}
+                        className="text-[11px] text-[#8B1E1E] hover:underline font-semibold cursor-pointer"
+                      >
+                        Contoh
+                      </button>
+                    </div>
                   </div>
 
                   <textarea
@@ -748,6 +944,11 @@ export function DaftarHadirPage({ onToast }: Props) {
                     <span className="font-semibold text-gray-600">
                       {formBulkText.split(/\r?\n/).filter((l) => l.trim()).length} baris nama
                     </span>
+                  </div>
+                  
+                  <div className="mt-2 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
+                    <span className="font-bold">Rentang Check-in:</span>
+                    <span>{formAgenda.waktuMulai || "08.00"} s.d. maksimal 10 menit setelahnya (detik unik per peserta, tidak melebihi +10 menit).</span>
                   </div>
                 </div>
 
@@ -779,10 +980,21 @@ export function DaftarHadirPage({ onToast }: Props) {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={handleRegenerateTimes}
-                    className="px-2.5 py-1 text-[11px] font-semibold border border-gray-300 rounded bg-white hover:bg-gray-50 text-gray-700 cursor-pointer"
+                    onClick={handleShufflePesertaTable}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border border-blue-200 rounded bg-blue-50 hover:bg-blue-100 text-blue-800 cursor-pointer transition-colors"
+                    title="Acak urutan nama peserta di tabel"
                   >
-                    Acak Ulang Waktu
+                    {Ico.shuffle("w-3 h-3")}
+                    <span>Acak Nama</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateTimes}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border border-gray-300 rounded bg-white hover:bg-gray-50 text-gray-700 cursor-pointer transition-colors"
+                    title="Acak ulang waktu check-in (rentang max 10 menit dari waktu mulai)"
+                  >
+                    {Ico.sync("w-3 h-3")}
+                    <span>Acak Ulang Waktu</span>
                   </button>
                   <button
                     type="button"
@@ -796,7 +1008,7 @@ export function DaftarHadirPage({ onToast }: Props) {
                           id: `p-new-${Date.now()}`,
                           nomor: n,
                           nama: "",
-                          tanggalCheckin: generateCheckinTime(dateStr, startTime, n - 1, n),
+                          tanggalCheckin: generateSingleCheckinTime(dateStr, startTime, n - 1, n),
                           status: "CheckIn",
                         },
                       ]);
