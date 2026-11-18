@@ -18,6 +18,7 @@ import { TransaksiPage }    from "./pages/TransaksiPage";
 import { KwitansiPage }     from "./pages/KwitansiPage";
 import { NotaPage }         from "./pages/NotaPage";
 import UndanganPage         from "./pages/UndanganPage";
+import DaftarHadirPage      from "./pages/DaftarHadirPage";
 import { TrashPage }        from "./pages/TrashPage";
 
 export default function App() {
@@ -38,12 +39,13 @@ export default function App() {
           {/* ── Protected shell (redirects to /login when unauthenticated) ── */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayoutRoute toast={toast} />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/transaksi" element={<TransaksiPage onToast={showToast} />} />
-              <Route path="/kwitansi"  element={<KwitansiPage />} />
-              <Route path="/nota"      element={<NotaPage onToast={showToast} />} />
-              <Route path="/undangan"  element={<UndanganPage />} />
-              <Route path="/trash"     element={<TrashPage onToast={showToast} />} />
+              <Route path="/dashboard"    element={<DashboardPage />} />
+              <Route path="/transaksi"    element={<TransaksiPage onToast={showToast} />} />
+              <Route path="/kwitansi"     element={<KwitansiPage />} />
+              <Route path="/nota"         element={<NotaPage onToast={showToast} />} />
+              <Route path="/undangan"     element={<UndanganPage />} />
+              <Route path="/daftar-hadir" element={<DaftarHadirPage onToast={showToast} />} />
+              <Route path="/trash"        element={<TrashPage onToast={showToast} />} />
             </Route>
           </Route>
 

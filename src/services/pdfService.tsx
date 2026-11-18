@@ -21,6 +21,8 @@ export interface PdfService {
   printUndanganPdf(data: import("../types").DataUndanganView): Promise<void>;
   downloadMultipleUndanganPdf(items: import("../types").DataUndanganView[]): Promise<void>;
   printMultipleUndanganPdf(items: import("../types").DataUndanganView[]): Promise<void>;
+  downloadDaftarHadirPdf(data: import("../types").DaftarHadirData): Promise<void>;
+  printDaftarHadirPdf(data: import("../types").DaftarHadirData): Promise<void>;
 }
 
 /** Sanitize string for use in Windows/Linux filenames */
@@ -333,6 +335,34 @@ export const pdfService: PdfService = {
     } catch (e) {
       console.error("[PdfService] Bulk undangan print error:", e);
       alert("Gagal memproses PDF untuk diprint.");
+    }
+  },
+
+  async downloadDaftarHadirPdf(data: import("../types").DaftarHadirData) {
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { DaftarHadirDocument } = await import("../documents/DaftarHadirDocument");
+      const blob = await pdf(<DaftarHadirDocument data={data} />).toBlob();
+      const safeTitle = data.agenda.namaAgenda
+        ? sanitizeFilename(data.agenda.namaAgenda).slice(0, 30)
+        : "Kegiatan";
+      const filename = `Daftar_Hadir_${safeTitle}.pdf`;
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error("[PdfService] Error generating Daftar Hadir PDF:", e);
+      alert("Gagal membuat PDF Daftar Hadir.");
+    }
+  },
+
+  async printDaftarHadirPdf(data: import("../types").DaftarHadirData) {
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { DaftarHadirDocument } = await import("../documents/DaftarHadirDocument");
+      const blob = await pdf(<DaftarHadirDocument data={data} />).toBlob();
+      triggerPrint(blob);
+    } catch (e) {
+      console.error("[PdfService] Error printing Daftar Hadir PDF:", e);
+      alert("Gagal memproses PDF Daftar Hadir untuk diprint.");
     }
   }
 };
