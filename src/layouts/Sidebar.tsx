@@ -15,12 +15,13 @@ import { useAuth } from "../contexts/AuthContext";
 const { color } = tokens;
 
 const NAV_ITEMS: { path: string; label: string; icon: (c?: string) => React.JSX.Element }[] = [
-  { path: "/dashboard", label: "Dashboard",      icon: Ico.monitor },
-  { path: "/transaksi", label: "Data Transaksi", icon: Ico.folder  },
-  { path: "/kwitansi",  label: "Print Kwitansi", icon: Ico.receipt },
-  { path: "/nota",      label: "Nota",           icon: Ico.note    },
-  { path: "/undangan",  label: "Undangan",       icon: Ico.folder  }, // Use folder icon or similar
-  { path: "/trash",     label: "Riwayat Hapus",  icon: Ico.trash   },
+  { path: "/dashboard",    label: "Dashboard",       icon: Ico.monitor   },
+  { path: "/transaksi",    label: "Data Transaksi",  icon: Ico.folder    },
+  { path: "/kwitansi",     label: "Print Kwitansi",  icon: Ico.receipt   },
+  { path: "/nota",         label: "Nota",            icon: Ico.note      },
+  { path: "/undangan",     label: "Undangan",        icon: Ico.folder    },
+  { path: "/daftar-hadir", label: "Daftar Hadir",    icon: Ico.clipboard },
+  { path: "/trash",        label: "Riwayat Hapus",   icon: Ico.trash     },
 ];
 
 export function Sidebar() {

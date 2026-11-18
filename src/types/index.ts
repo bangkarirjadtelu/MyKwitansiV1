@@ -218,3 +218,5 @@ export type CreateFormulirUndanganInput = Omit<
   FormulirUndangan,
   "id_formulir_undangan" | "tanggal_input" | "id_admin"
 >;
+
+export * from "./daftarHadir";
