@@ -731,7 +731,7 @@ export function DaftarHadirPage({ onToast }: Props) {
               ? "Duplikat Data Daftar Hadir"
               : "Buat Daftar Hadir Baru"
           }
-          wide
+          extraWide
         >
           <div className="space-y-6 pt-2 pb-2">
             {isDuplicate && (
@@ -1129,7 +1129,7 @@ export function DaftarHadirPage({ onToast }: Props) {
         <Modal
           onClose={() => setViewTarget(null)}
           title={`Pratinjau Dokumen - ${viewTarget.agenda.namaAgenda || "Daftar Hadir"}`}
-          wide
+          extraWide
         >
           <div className="space-y-4 pt-2 pb-2">
             <div className="flex flex-wrap items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200 gap-2">
