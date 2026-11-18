@@ -2,6 +2,76 @@ import { supabase } from "../lib/supabase";
 import type { DaftarHadirRecord, DaftarHadirAgenda, DaftarHadirPeserta } from "../types/daftarHadir";
 
 // ─────────────────────────────────────────────────────────────
+// ID sample data bawaan (INITIAL_RECORDS) — jangan di-migrate
+// ─────────────────────────────────────────────────────────────
+const SAMPLE_IDS = new Set(["dh-0001", "dh-0002"]);
+const LOCALSTORAGE_KEY   = "mykwitansi_daftar_hadir_records";
+const MIGRATION_DONE_KEY = "mykwitansi_dh_migrated_to_supabase";
+
+/**
+ * Satu kali migrasi: ambil data lama dari localStorage dan upload ke Supabase.
+ * Data sample bawaan (dh-0001, dh-0002) tidak ikut dimigrasi.
+ * Setelah selesai, flag MIGRATION_DONE_KEY di-set sehingga tidak jalan lagi.
+ */
+async function migrateLocalStorageToSupabase(): Promise<void> {
+  // Sudah pernah migrasi? Skip.
+  if (localStorage.getItem(MIGRATION_DONE_KEY) === "done") return;
+
+  const raw = localStorage.getItem(LOCALSTORAGE_KEY);
+  if (!raw) {
+    localStorage.setItem(MIGRATION_DONE_KEY, "done");
+    return;
+  }
+
+  let records: DaftarHadirRecord[] = [];
+  try {
+    records = JSON.parse(raw);
+  } catch {
+    localStorage.setItem(MIGRATION_DONE_KEY, "done");
+    return;
+  }
+
+  // Filter: hanya data yang dibuat user (bukan sample bawaan)
+  const userRecords = records.filter((r) => !SAMPLE_IDS.has(r.id));
+  if (userRecords.length === 0) {
+    localStorage.setItem(MIGRATION_DONE_KEY, "done");
+    return;
+  }
+
+  // Cek ID mana yang sudah ada di Supabase agar tidak duplikat
+  const ids = userRecords.map((r) => r.id);
+  const { data: existing } = await supabase
+    .from("daftar_hadir")
+    .select("id")
+    .in("id", ids);
+
+  const existingIds = new Set((existing || []).map((r: { id: string }) => r.id));
+  const toInsert = userRecords.filter((r) => !existingIds.has(r.id));
+
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((r) => ({
+      id: r.id,
+      nomor_dokumen: r.nomor_dokumen,
+      agenda: r.agenda,
+      peserta: r.peserta,
+      admin_username: r.admin_username || "Admin",
+      is_simulation: r.isSimulation ?? true,
+      created_at: r.created_at || new Date().toISOString(),
+    }));
+
+    const { error } = await supabase.from("daftar_hadir").insert(rows);
+    if (error) {
+      console.warn("[DaftarHadir] Migrasi localStorage sebagian gagal:", error.message);
+      // Jangan set flag done — coba lagi nanti
+      return;
+    }
+    console.info(`[DaftarHadir] Berhasil migrasi ${toInsert.length} record dari localStorage ke Supabase.`);
+  }
+
+  localStorage.setItem(MIGRATION_DONE_KEY, "done");
+}
+
+// ─────────────────────────────────────────────────────────────
 // Row shape from Supabase table `daftar_hadir`
 // ─────────────────────────────────────────────────────────────
 interface DbRow {
@@ -39,6 +109,9 @@ function newId(): string {
 // ─────────────────────────────────────────────────────────────
 export const daftarHadirService = {
   async getAll(): Promise<DaftarHadirRecord[]> {
+    // Jalankan migrasi localStorage → Supabase sekali saja (jika ada data lama)
+    await migrateLocalStorageToSupabase();
+
     const { data, error } = await supabase
       .from("daftar_hadir")
       .select("*")
