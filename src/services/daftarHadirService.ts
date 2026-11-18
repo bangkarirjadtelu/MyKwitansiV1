@@ -1,156 +1,154 @@
+import { supabase } from "../lib/supabase";
 import type { DaftarHadirRecord, DaftarHadirAgenda, DaftarHadirPeserta } from "../types/daftarHadir";
 
-const STORAGE_KEY = "mykwitansi_daftar_hadir_records";
-
-const INITIAL_RECORDS: DaftarHadirRecord[] = [
-  {
-    id: "dh-0001",
-    nomor_dokumen: "0001",
-    agenda: {
-      hariTanggal: "Jumat, 15 Oktober 2026",
-      namaAgenda: "Rapat Koordinasi SDM & Kultubai",
-      tempat: "Ruang Rapat SDM Lantai 2 Gedung E. Ruang Kultubai",
-      waktu: "08.00 - 13.00 WIB",
-      waktuMulai: "08.00",
-      waktuSelesai: "13.00",
-      noFormulir: "",
-      revisi: "",
-      berlakuEfektif: "",
-      hal: "",
-    },
-    peserta: [
-      { id: "p1", nomor: 1, nama: "AULIA FITRAH FAJRIANI",    tanggalCheckin: "15 Oktober 2026, 08:01:25", status: "CheckIn" },
-      { id: "p2", nomor: 2, nama: "WAHYU NURROSYID",          tanggalCheckin: "15 Oktober 2026, 08:02:48", status: "CheckIn" },
-      { id: "p3", nomor: 3, nama: "GHEAVIRA MELLINIA",        tanggalCheckin: "15 Oktober 2026, 08:04:12", status: "CheckIn" },
-      { id: "p4", nomor: 4, nama: "AGNY NADYA YUSNIAULIA",    tanggalCheckin: "15 Oktober 2026, 08:05:37", status: "CheckIn" },
-      { id: "p5", nomor: 5, nama: "WIWIN RATNA SARI",         tanggalCheckin: "15 Oktober 2026, 08:06:55", status: "CheckIn" },
-      { id: "p6", nomor: 6, nama: "TOUFAN DIANSYAH TAMBUNAN", tanggalCheckin: "15 Oktober 2026, 08:08:20", status: "CheckIn" },
-      { id: "p7", nomor: 7, nama: "ASYA AZHAR FATHINA",       tanggalCheckin: "15 Oktober 2026, 08:09:44", status: "CheckIn" },
-    ],
-    admin_username: "Bang Karir",
-    created_at: "2026-11-18T10:00:00.000Z",
-    isSimulation: true,
-  },
-  {
-    id: "dh-0002",
-    nomor_dokumen: "0002",
-    agenda: {
-      hariTanggal: "Jumat, 16 Oktober 2026",
-      namaAgenda: "Briefing Tim Public Relations & Publikasi Kampus",
-      tempat: "Auditorium Gedung Damar Lantai 2",
-      waktu: "13.30 - 16.30 WIB",
-      waktuMulai: "13.30",
-      waktuSelesai: "16.30",
-      noFormulir: "",
-      revisi: "",
-      berlakuEfektif: "",
-      hal: "",
-    },
-    peserta: Array.from({ length: 15 }, (_, i) => {
-      const minOffset = Math.floor((i / 14) * 8); // 0 to 8 minutes
-      const secOffset = (15 + i * 23) % 60;
-      const pad = (n: number) => n.toString().padStart(2, "0");
-      return {
-        id: `pr-${i + 1}`,
-        nomor: i + 1,
-        nama: `Staff PR ${i + 1}`,
-        tanggalCheckin: `16 Oktober 2026, 13:${pad(30 + minOffset)}:${pad(secOffset)}`,
-        status: "CheckIn",
-      };
-    }),
-    admin_username: "Bang Karir",
-    created_at: "2026-11-18T11:15:00.000Z",
-    isSimulation: true,
-  },
-];
-
-function loadFromStorage(): DaftarHadirRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_RECORDS));
-      return INITIAL_RECORDS;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return INITIAL_RECORDS;
-  }
+// ─────────────────────────────────────────────────────────────
+// Row shape from Supabase table `daftar_hadir`
+// ─────────────────────────────────────────────────────────────
+interface DbRow {
+  id: string;
+  nomor_dokumen: string;
+  agenda: DaftarHadirAgenda;
+  peserta: DaftarHadirPeserta[];
+  admin_username: string;
+  is_simulation: boolean;
+  created_at: string;
+  deleted_at: string | null;
 }
 
-function saveToStorage(records: DaftarHadirRecord[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  } catch (e) {
-    console.error("Failed to save to localStorage:", e);
-  }
+function rowToRecord(row: DbRow): DaftarHadirRecord {
+  return {
+    id: row.id,
+    nomor_dokumen: row.nomor_dokumen,
+    agenda: row.agenda,
+    peserta: row.peserta,
+    admin_username: row.admin_username,
+    created_at: row.created_at,
+    isSimulation: row.is_simulation,
+  };
 }
 
+// ─────────────────────────────────────────────────────────────
+// Generate a unique id with current timestamp
+// ─────────────────────────────────────────────────────────────
+function newId(): string {
+  return `dh-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────
 export const daftarHadirService = {
   async getAll(): Promise<DaftarHadirRecord[]> {
-    return loadFromStorage();
+    const { data, error } = await supabase
+      .from("daftar_hadir")
+      .select("*")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[DaftarHadir] getAll error:", error.message);
+      throw new Error("Gagal mengambil data daftar hadir: " + error.message);
+    }
+
+    return (data as DbRow[]).map(rowToRecord);
   },
 
   async getById(id: string): Promise<DaftarHadirRecord | null> {
-    const all = loadFromStorage();
-    return all.find((r) => r.id === id) || null;
+    const { data, error } = await supabase
+      .from("daftar_hadir")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single();
+
+    if (error || !data) return null;
+    return rowToRecord(data as DbRow);
   },
 
-  async create(data: {
+  async create(input: {
     agenda: DaftarHadirAgenda;
     peserta: DaftarHadirPeserta[];
     admin_username: string;
     isSimulation?: boolean;
   }): Promise<DaftarHadirRecord> {
-    const all = loadFromStorage();
-    const nextNumber = (all.length + 1).toString().padStart(4, "0");
-    const newRecord: DaftarHadirRecord = {
-      id: `dh-${Date.now()}`,
+    // Hitung nomor dokumen berikutnya
+    const { count } = await supabase
+      .from("daftar_hadir")
+      .select("*", { count: "exact", head: true })
+      .is("deleted_at", null);
+
+    const nextNumber = ((count ?? 0) + 1).toString().padStart(4, "0");
+
+    const payload = {
+      id: newId(),
       nomor_dokumen: nextNumber,
-      agenda: data.agenda,
-      peserta: data.peserta,
-      admin_username: data.admin_username,
-      created_at: new Date().toISOString(),
-      isSimulation: data.isSimulation ?? true,
+      agenda: input.agenda,
+      peserta: input.peserta,
+      admin_username: input.admin_username,
+      is_simulation: input.isSimulation ?? true,
     };
-    all.unshift(newRecord);
-    saveToStorage(all);
-    return newRecord;
+
+    const { data, error } = await supabase
+      .from("daftar_hadir")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error("[DaftarHadir] create error:", error?.message);
+      throw new Error("Gagal menyimpan daftar hadir: " + error?.message);
+    }
+
+    return rowToRecord(data as DbRow);
   },
 
-  async update(id: string, data: Partial<DaftarHadirRecord>): Promise<DaftarHadirRecord> {
-    const all = loadFromStorage();
-    const idx = all.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error("Record not found");
-    const updated = { ...all[idx], ...data };
-    all[idx] = updated;
-    saveToStorage(all);
-    return updated;
+  async update(id: string, input: Partial<DaftarHadirRecord>): Promise<DaftarHadirRecord> {
+    const payload: Partial<DbRow> = {};
+    if (input.agenda)         payload.agenda = input.agenda;
+    if (input.peserta)        payload.peserta = input.peserta;
+    if (input.admin_username) payload.admin_username = input.admin_username;
+    if (input.isSimulation !== undefined) payload.is_simulation = input.isSimulation;
+
+    const { data, error } = await supabase
+      .from("daftar_hadir")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error("[DaftarHadir] update error:", error?.message);
+      throw new Error("Gagal memperbarui daftar hadir: " + error?.message);
+    }
+
+    return rowToRecord(data as DbRow);
   },
 
   async delete(id: string): Promise<void> {
-    const all = loadFromStorage();
-    const filtered = all.filter((r) => r.id !== id);
-    saveToStorage(filtered);
+    // Soft delete — set deleted_at so data can be recovered if needed
+    const { error } = await supabase
+      .from("daftar_hadir")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+
+    if (error) {
+      console.error("[DaftarHadir] delete error:", error.message);
+      throw new Error("Gagal menghapus daftar hadir: " + error.message);
+    }
   },
 
   async duplicate(id: string): Promise<DaftarHadirRecord> {
-    const all = loadFromStorage();
-    const target = all.find((r) => r.id === id);
-    if (!target) throw new Error("Target not found");
+    const original = await this.getById(id);
+    if (!original) throw new Error("Data tidak ditemukan.");
 
-    const nextNumber = (all.length + 1).toString().padStart(4, "0");
-    const duplicated: DaftarHadirRecord = {
-      ...target,
-      id: `dh-${Date.now()}`,
-      nomor_dokumen: nextNumber,
+    return this.create({
       agenda: {
-        ...target.agenda,
-        namaAgenda: `${target.agenda.namaAgenda} (Salinan)`,
+        ...original.agenda,
+        namaAgenda: `${original.agenda.namaAgenda} (Salinan)`,
       },
-      created_at: new Date().toISOString(),
-    };
-    all.unshift(duplicated);
-    saveToStorage(all);
-    return duplicated;
+      peserta: original.peserta,
+      admin_username: original.admin_username,
+      isSimulation: original.isSimulation,
+    });
   },
 };

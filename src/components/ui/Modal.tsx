@@ -1,23 +1,31 @@
 /**
  * Modal dialog — consistent overlay, panel shape, header, and close button.
- * `wide` switches between form width (max-w-lg) and preview width (max-w-2xl).
+ * Supports standard form width (max-w-lg), wide (max-w-2xl), extraWide (max-w-4xl), or custom maxWidth.
  */
 export function Modal({
-  title, onClose, children, wide = false,
+  title,
+  onClose,
+  children,
+  wide = false,
+  extraWide = false,
+  maxWidth,
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   wide?: boolean;
+  extraWide?: boolean;
+  maxWidth?: string;
 }) {
+  const widthClass = maxWidth ?? (extraWide ? "max-w-4xl" : wide ? "max-w-2xl" : "max-w-lg");
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: "rgba(0,0,0,0.45)" }}
     >
       <div
-        className={`bg-white rounded-2xl shadow-2xl w-full modal-enter flex flex-col
-          ${wide ? "max-w-2xl" : "max-w-lg"}`}
+        className={`bg-white rounded-2xl shadow-2xl w-full modal-enter flex flex-col ${widthClass}`}
         style={{ maxHeight: "90vh" }}
       >
         {/* Header */}
@@ -26,7 +34,7 @@ export function Modal({
           <button
             onClick={onClose}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-lg leading-none
-              text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
           >
             ×
           </button>
