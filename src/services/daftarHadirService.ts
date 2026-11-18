@@ -19,13 +19,13 @@ const INITIAL_RECORDS: DaftarHadirRecord[] = [
       hal: "",
     },
     peserta: [
-      { id: "p1", nomor: 1, nama: "AULIA FITRAH FAJRIANI",    tanggalCheckin: "15 Oktober 2026, 08:40:30", status: "CheckIn" },
-      { id: "p2", nomor: 2, nama: "WAHYU NURROSYID",          tanggalCheckin: "15 Oktober 2026, 08:31:02", status: "CheckIn" },
-      { id: "p3", nomor: 3, nama: "GHEAVIRA MELLINIA",        tanggalCheckin: "15 Oktober 2026, 08:31:15", status: "CheckIn" },
-      { id: "p4", nomor: 4, nama: "AGNY NADYA YUSNIAULIA",    tanggalCheckin: "15 Oktober 2026, 08:31:30", status: "CheckIn" },
-      { id: "p5", nomor: 5, nama: "WIWIN RATNA SARI",         tanggalCheckin: "15 Oktober 2026, 08:41:00", status: "CheckIn" },
-      { id: "p6", nomor: 6, nama: "TOUFAN DIANSYAH TAMBUNAN", tanggalCheckin: "15 Oktober 2026, 08:38:30", status: "CheckIn" },
-      { id: "p7", nomor: 7, nama: "ASYA AZHAR FATHINA",       tanggalCheckin: "15 Oktober 2026, 08:40:30", status: "CheckIn" },
+      { id: "p1", nomor: 1, nama: "AULIA FITRAH FAJRIANI",    tanggalCheckin: "15 Oktober 2026, 08:01:25", status: "CheckIn" },
+      { id: "p2", nomor: 2, nama: "WAHYU NURROSYID",          tanggalCheckin: "15 Oktober 2026, 08:02:48", status: "CheckIn" },
+      { id: "p3", nomor: 3, nama: "GHEAVIRA MELLINIA",        tanggalCheckin: "15 Oktober 2026, 08:04:12", status: "CheckIn" },
+      { id: "p4", nomor: 4, nama: "AGNY NADYA YUSNIAULIA",    tanggalCheckin: "15 Oktober 2026, 08:05:37", status: "CheckIn" },
+      { id: "p5", nomor: 5, nama: "WIWIN RATNA SARI",         tanggalCheckin: "15 Oktober 2026, 08:06:55", status: "CheckIn" },
+      { id: "p6", nomor: 6, nama: "TOUFAN DIANSYAH TAMBUNAN", tanggalCheckin: "15 Oktober 2026, 08:08:20", status: "CheckIn" },
+      { id: "p7", nomor: 7, nama: "ASYA AZHAR FATHINA",       tanggalCheckin: "15 Oktober 2026, 08:09:44", status: "CheckIn" },
     ],
     admin_username: "Bang Karir",
     created_at: "2026-11-18T10:00:00.000Z",
@@ -46,13 +46,18 @@ const INITIAL_RECORDS: DaftarHadirRecord[] = [
       berlakuEfektif: "",
       hal: "",
     },
-    peserta: Array.from({ length: 15 }, (_, i) => ({
-      id: `pr-${i + 1}`,
-      nomor: i + 1,
-      nama: `Staff PR ${i + 1}`,
-      tanggalCheckin: `16 Oktober 2026, 13:${30 + Math.floor(i * 1.5)}:${(10 + i * 3) % 60}`,
-      status: "CheckIn",
-    })),
+    peserta: Array.from({ length: 15 }, (_, i) => {
+      const minOffset = Math.floor((i / 14) * 8); // 0 to 8 minutes
+      const secOffset = (15 + i * 23) % 60;
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      return {
+        id: `pr-${i + 1}`,
+        nomor: i + 1,
+        nama: `Staff PR ${i + 1}`,
+        tanggalCheckin: `16 Oktober 2026, 13:${pad(30 + minOffset)}:${pad(secOffset)}`,
+        status: "CheckIn",
+      };
+    }),
     admin_username: "Bang Karir",
     created_at: "2026-11-18T11:15:00.000Z",
     isSimulation: true,

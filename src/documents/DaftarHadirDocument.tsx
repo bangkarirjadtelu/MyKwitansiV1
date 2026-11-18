@@ -5,10 +5,10 @@ import { excelLogoBase64 } from "../assets/excelLogoBase64";
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 30,
-    paddingBottom: 30,
-    paddingLeft: 30,
-    paddingRight: 30,
+    paddingTop: 35,
+    paddingBottom: 35,
+    paddingLeft: 35,
+    paddingRight: 35,
     fontFamily: "Times-Roman",
     fontSize: 9.5,
     lineHeight: 1.25,
@@ -18,17 +18,12 @@ const styles = StyleSheet.create({
   // ── KOP SURAT ──
   kopTable: {
     width: "100%",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
+    borderWidth: 1,
     borderColor: "#000000",
     marginBottom: 8,
-  },
-  kopMainRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#000000",
   },
-  kopLogoCell: {
+  kopLogoCol: {
     width: "25%",
     borderRightWidth: 1,
     borderColor: "#000000",
@@ -37,74 +32,59 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   logoImg: {
-    width: 110,
+    width: 105,
     height: 38,
     objectFit: "contain",
   },
-  kopMiddleCell: {
-    width: "45%",
+  kopRightCol: {
+    width: "75%",
+    flexDirection: "column",
+  },
+  kopRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderColor: "#000000",
+    minHeight: 18,
+    alignItems: "stretch",
+  },
+  kopRowLast: {
+    flexDirection: "row",
+    minHeight: 18,
+    alignItems: "stretch",
+  },
+  kopMiddleText: {
+    width: "60%",
+    paddingLeft: 6,
+    paddingRight: 4,
     borderRightWidth: 1,
     borderColor: "#000000",
-    flexDirection: "column",
-  },
-  kopMiddleTop: {
-    padding: 4,
-    borderBottomWidth: 1,
-    borderColor: "#000000",
+    height: "100%",
     justifyContent: "center",
-    minHeight: 20,
-  },
-  kopMiddleAddress: {
-    padding: 4,
-    borderBottomWidth: 1,
-    borderColor: "#000000",
-    justifyContent: "center",
-    flex: 1,
-  },
-  kopMiddleBottom: {
-    padding: 4,
-    justifyContent: "center",
-    minHeight: 18,
-  },
-  kopRightCell: {
-    width: "30%",
-    flexDirection: "column",
-  },
-  metaRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#000000",
-    minHeight: 18,
-    alignItems: "center",
-  },
-  metaRowLast: {
-    flexDirection: "row",
-    minHeight: 18,
-    alignItems: "center",
   },
   metaLabel: {
-    width: "60%",
+    width: "24%",
     paddingLeft: 4,
     paddingRight: 2,
     borderRightWidth: 1,
     borderColor: "#000000",
-    fontSize: 9,
-    fontFamily: "Times-Roman",
+    fontSize: 8.5,
+    height: "100%",
+    justifyContent: "center",
   },
   metaValue: {
-    width: "40%",
-    paddingLeft: 4,
+    width: "16%",
+    paddingLeft: 2,
     paddingRight: 2,
-    fontSize: 9,
-    fontFamily: "Times-Roman",
+    fontSize: 8.5,
     textAlign: "center",
+    height: "100%",
+    justifyContent: "center",
   },
 
   // ── AGENDA BLOCK ──
   agendaTable: {
     width: "100%",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
+    borderWidth: 1,
     borderColor: "#000000",
     marginBottom: 8,
   },
@@ -112,6 +92,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderColor: "#000000",
+    minHeight: 18,
+    alignItems: "center",
+  },
+  agendaRowLast: {
+    flexDirection: "row",
     minHeight: 18,
     alignItems: "center",
   },
@@ -124,25 +109,20 @@ const styles = StyleSheet.create({
     paddingTop: 3,
     paddingBottom: 3,
     fontSize: 9.5,
-    fontFamily: "Times-Roman",
   },
   agendaValue: {
     width: "75%",
-    borderRightWidth: 1,
-    borderColor: "#000000",
     paddingLeft: 6,
     paddingRight: 4,
     paddingTop: 3,
     paddingBottom: 3,
     fontSize: 9.5,
-    fontFamily: "Times-Roman",
   },
 
   // ── ATTENDANCE TABLE ──
   table: {
     width: "100%",
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
+    borderWidth: 1,
     borderColor: "#000000",
   },
   tableHeaderRow: {
@@ -157,6 +137,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderColor: "#000000",
+    minHeight: 18,
+    alignItems: "center",
+  },
+  tableRowLast: {
+    flexDirection: "row",
     minHeight: 18,
     alignItems: "center",
   },
@@ -189,8 +174,6 @@ const styles = StyleSheet.create({
   },
   thStatus: {
     width: "15%",
-    borderRightWidth: 1,
-    borderColor: "#000000",
     textAlign: "center",
     fontFamily: "Times-Bold",
     fontSize: 9.5,
@@ -203,7 +186,6 @@ const styles = StyleSheet.create({
     borderColor: "#000000",
     textAlign: "center",
     fontSize: 9,
-    fontFamily: "Times-Roman",
     padding: 3,
   },
   tdNama: {
@@ -212,7 +194,6 @@ const styles = StyleSheet.create({
     borderColor: "#000000",
     textAlign: "left",
     fontSize: 9,
-    fontFamily: "Times-Roman", // Serif font corresponding to Cambria
     paddingLeft: 6,
     paddingRight: 4,
     paddingTop: 3,
@@ -224,16 +205,12 @@ const styles = StyleSheet.create({
     borderColor: "#000000",
     textAlign: "center",
     fontSize: 9,
-    fontFamily: "Times-Roman",
     padding: 3,
   },
   tdStatus: {
     width: "15%",
-    borderRightWidth: 1,
-    borderColor: "#000000",
     textAlign: "center",
     fontSize: 9,
-    fontFamily: "Times-Roman",
     padding: 3,
   },
 });
@@ -249,54 +226,72 @@ export function DaftarHadirDocument({ data }: Props) {
     <Document title={`Daftar Hadir - ${agenda.namaAgenda || "Kegiatan"}`}>
       <Page size="A4" style={styles.page}>
         
-        {/* ── KOP SURAT TABLE ── */}
+        {/* ── KOP SURAT TABLE (Full Outer Border) ── */}
         <View style={styles.kopTable}>
-          <View style={styles.kopMainRow}>
-            
-            {/* Logo Left */}
-            <View style={styles.kopLogoCell}>
-              <Image src={excelLogoBase64} style={styles.logoImg} />
-            </View>
+          {/* Logo Column */}
+          <View style={styles.kopLogoCol}>
+            <Image src={excelLogoBase64} style={styles.logoImg} />
+          </View>
 
-            {/* Middle Section: 3 stacked sub-rows */}
-            <View style={styles.kopMiddleCell}>
-              <View style={styles.kopMiddleTop}>
+          {/* Right 4-row Column matching template */}
+          <View style={styles.kopRightCol}>
+            {/* Row 1 */}
+            <View style={styles.kopRow}>
+              <View style={styles.kopMiddleText}>
                 <Text style={{ fontFamily: "Times-Bold", fontSize: 10.5 }}>UNIVERSITAS TELKOM</Text>
               </View>
-              <View style={styles.kopMiddleAddress}>
+              <View style={styles.metaLabel}>
+                <Text>No. Formulir</Text>
+              </View>
+              <View style={styles.metaValue}>
+                <Text>{agenda.noFormulir || ""}</Text>
+              </View>
+            </View>
+
+            {/* Row 2 */}
+            <View style={styles.kopRow}>
+              <View style={styles.kopMiddleText}>
                 <Text style={{ fontSize: 8.5 }}>
                   Jl. Telekomunikasi No. 1 Terusan Buah Batu Bandung 40257
                 </Text>
               </View>
-              <View style={styles.kopMiddleBottom}>
+              <View style={styles.metaLabel}>
+                <Text>Revisi</Text>
+              </View>
+              <View style={styles.metaValue}>
+                <Text>{agenda.revisi || ""}</Text>
+              </View>
+            </View>
+
+            {/* Row 3 */}
+            <View style={styles.kopRow}>
+              <View style={styles.kopMiddleText}>
+                <Text style={{ fontSize: 8.5 }}></Text>
+              </View>
+              <View style={styles.metaLabel}>
+                <Text>Berlaku Efektif</Text>
+              </View>
+              <View style={styles.metaValue}>
+                <Text>{agenda.berlakuEfektif || ""}</Text>
+              </View>
+            </View>
+
+            {/* Row 4 */}
+            <View style={styles.kopRowLast}>
+              <View style={styles.kopMiddleText}>
                 <Text style={{ fontFamily: "Times-Bold", fontSize: 10 }}>Daftar Hadir</Text>
               </View>
-            </View>
-
-            {/* Right Section: 4 metadata key-value rows */}
-            <View style={styles.kopRightCell}>
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>No. Formulir</Text>
-                <Text style={styles.metaValue}>{agenda.noFormulir || ""}</Text>
+              <View style={styles.metaLabel}>
+                <Text>Hal</Text>
               </View>
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Revisi</Text>
-                <Text style={styles.metaValue}>{agenda.revisi || ""}</Text>
-              </View>
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Berlaku Efektif</Text>
-                <Text style={styles.metaValue}>{agenda.berlakuEfektif || ""}</Text>
-              </View>
-              <View style={styles.metaRowLast}>
-                <Text style={styles.metaLabel}>Hal</Text>
-                <Text style={styles.metaValue}>{agenda.hal || ""}</Text>
+              <View style={styles.metaValue}>
+                <Text>{agenda.hal || ""}</Text>
               </View>
             </View>
-
           </View>
         </View>
 
-        {/* ── AGENDA TABLE ── */}
+        {/* ── AGENDA TABLE (Full Outer Border) ── */}
         <View style={styles.agendaTable}>
           <View style={styles.agendaRow}>
             <Text style={styles.agendaLabel}>Hari, Tanggal</Text>
@@ -310,15 +305,15 @@ export function DaftarHadirDocument({ data }: Props) {
             <Text style={styles.agendaLabel}>Tempat</Text>
             <Text style={styles.agendaValue}>{agenda.tempat}</Text>
           </View>
-          <View style={styles.agendaRow}>
+          <View style={styles.agendaRowLast}>
             <Text style={styles.agendaLabel}>Waktu</Text>
             <Text style={styles.agendaValue}>{agenda.waktu}</Text>
           </View>
         </View>
 
-        {/* ── ATTENDANCE LIST TABLE ── */}
+        {/* ── ATTENDANCE TABLE (Full Outer Border) ── */}
         <View style={styles.table}>
-          {/* Header */}
+          {/* Header Row */}
           <View style={styles.tableHeaderRow} fixed>
             <Text style={styles.thNomor}>Nomor</Text>
             <Text style={styles.thNama}>Nama</Text>
@@ -327,17 +322,22 @@ export function DaftarHadirDocument({ data }: Props) {
           </View>
 
           {/* Data Rows */}
-          {peserta.map((p) => (
-            <View key={p.id} style={styles.tableRow} wrap={false}>
-              <Text style={styles.tdNomor}>{p.nomor}</Text>
-              <Text style={styles.tdNama}>{p.nama}</Text>
-              <Text style={styles.tdCheckin}>{p.tanggalCheckin}</Text>
-              <Text style={styles.tdStatus}>{p.status || "CheckIn"}</Text>
-            </View>
-          ))}
+          {peserta.map((p, idx) => {
+            const isLast = idx === peserta.length - 1;
+            return (
+              <View key={p.id} style={isLast ? styles.tableRowLast : styles.tableRow} wrap={false}>
+                <Text style={styles.tdNomor}>{p.nomor}</Text>
+                <Text style={styles.tdNama}>{p.nama}</Text>
+                <Text style={styles.tdCheckin}>{p.tanggalCheckin}</Text>
+                <Text style={styles.tdStatus}>{p.status || "CheckIn"}</Text>
+              </View>
+            );
+          })}
         </View>
 
       </Page>
     </Document>
   );
 }
+
+export default DaftarHadirDocument;
