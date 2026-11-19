@@ -3,14 +3,74 @@ import type { DaftarHadirData } from "../types/daftarHadir";
 import { excelLogoRawBase64 } from "../assets/excelLogoBase64";
 
 /**
- * Service to generate and download Excel (.xlsx) file
- * replicating the exact layout, borders, fonts, and dimensions of template-daftar-hadir.xlsx
+ * Generates unique sheet name formatted as:
+ * tanggal + bulan + angka belakang tahun - agenda singkat
+ * (max 31 chars, sanitized for Excel)
  */
-export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?: string): Promise<void> {
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Daftar Hadir");
+export function generateSheetName(
+  hariTanggal: string,
+  namaAgenda: string,
+  usedNames: Set<string>
+): string {
+  let day = "";
+  let month = "";
+  let year2Digit = "";
 
-  // Exact page setup matching template
+  const match = hariTanggal.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+  if (match) {
+    day = match[1];
+    month = match[2];
+    year2Digit = match[3].slice(-2);
+  } else {
+    const isoMatch = hariTanggal.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      year2Digit = isoMatch[1].slice(-2);
+      const mNum = parseInt(isoMatch[2], 10);
+      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+      month = months[mNum - 1] || isoMatch[2];
+      day = parseInt(isoMatch[3], 10).toString();
+    }
+  }
+
+  // Remove invalid characters in Excel sheet names: \ / ? * [ ] :
+  const cleanAgenda = (namaAgenda || "Agenda")
+    .replace(/[\\/?*[\]:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const prefix = day && month && year2Digit ? `${day} ${month} ${year2Digit} - ` : "";
+  const maxAgendaLen = Math.max(5, 31 - prefix.length);
+  const shortAgenda = cleanAgenda.slice(0, maxAgendaLen).trim();
+  let baseName = `${prefix}${shortAgenda}`.trim().slice(0, 31);
+  if (!baseName) baseName = "Daftar Hadir";
+
+  let finalName = baseName;
+  if (!usedNames.has(finalName)) {
+    usedNames.add(finalName);
+    return finalName;
+  }
+
+  let counter = 2;
+  while (true) {
+    const suffix = ` (${counter})`;
+    const candidate = baseName.slice(0, 31 - suffix.length) + suffix;
+    if (!usedNames.has(candidate)) {
+      usedNames.add(candidate);
+      return candidate;
+    }
+    counter++;
+  }
+}
+
+/**
+ * Populates a single worksheet according to template-daftar-hadir.xlsx layout
+ */
+function populateWorksheet(
+  ws: ExcelJS.Worksheet,
+  data: DaftarHadirData,
+  imageId: number
+) {
+  // Page setup matching template
   ws.pageSetup = {
     paperSize: 9, // A4
     orientation: "portrait",
@@ -41,6 +101,7 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
   };
 
   // ── ROW 1 ──
+  ws.getRow(1).height = 18;
   ws.getCell("A1").border = {
     top: { style: "thin" },
     left: { style: "thin" },
@@ -88,6 +149,7 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
   cellD2.border = thinBorder;
 
   // ── ROW 3 ──
+  ws.getRow(3).height = 18;
   ws.getCell("A3").border = { left: { style: "thin" }, right: { style: "thin" } };
   ws.getCell("B3").border = thinBorder;
 
@@ -107,6 +169,7 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
   ws.mergeCells("B2:B3");
 
   // ── ROW 4 ──
+  ws.getRow(4).height = 18;
   ws.getCell("A4").border = {
     bottom: { style: "thin" },
     left: { style: "thin" },
@@ -132,15 +195,12 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
   cellD4.border = thinBorder;
 
   // ── Embed Telkom University Logo into A1:A4 ──
+  // Using explicit pixel dimensions (140px width x 68px height) so the logo's 2.05:1 aspect ratio
+  // is strictly preserved across all spreadsheet viewers (WPS Office, Microsoft Excel, LibreOffice).
   try {
-    const imageId = wb.addImage({
-      base64: excelLogoRawBase64,
-      extension: "png",
-    });
-
     ws.addImage(imageId, {
-      tl: { col: 0.05, row: 0.1 },
-      br: { col: 0.95, row: 3.8 },
+      tl: { col: 0.12, row: 0.15 },
+      ext: { width: 140, height: 68 },
       editAs: "oneCell",
     });
   } catch (err) {
@@ -204,7 +264,7 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
 
     const cB = ws.getCell(`B${r}`);
     cB.value = peserta.nama;
-    cB.font = { name: "Cambria", size: 10 }; // FONT CAMBRIA for participant name!
+    cB.font = { name: "Cambria", size: 10 }; // FONT CAMBRIA for participant name
     cB.alignment = { horizontal: "left", vertical: "middle" };
     cB.border = thinBorder;
 
@@ -220,8 +280,37 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
     cD.alignment = { horizontal: "center", vertical: "middle" };
     cD.border = thinBorder;
   });
+}
 
-  // ── Trigger Download in Browser ──
+/**
+ * Export multiple daftar hadir items into a single Excel (.xlsx) file,
+ * where each item gets its own worksheet named: tanggal + bulan + tahun2Digit - agendaSingkat
+ */
+export async function exportMultipleDaftarHadirToExcel(
+  items: DaftarHadirData[],
+  filename?: string
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const wb = new ExcelJS.Workbook();
+  const imageId = wb.addImage({
+    base64: excelLogoRawBase64,
+    extension: "png",
+  });
+
+  const usedNames = new Set<string>();
+
+  items.forEach((item) => {
+    const sheetName = generateSheetName(
+      item.agenda.hariTanggal,
+      item.agenda.namaAgenda,
+      usedNames
+    );
+    const ws = wb.addWorksheet(sheetName);
+    populateWorksheet(ws, item, imageId);
+  });
+
+  // Trigger download in browser
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -229,12 +318,30 @@ export async function exportDaftarHadirToExcel(data: DaftarHadirData, filename?:
   const url = window.URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  const safeTitle = data.agenda.namaAgenda
-    ? data.agenda.namaAgenda.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 30)
-    : "Daftar_Hadir";
-  anchor.download = filename || `Daftar_Hadir_${safeTitle}.xlsx`;
+
+  if (filename) {
+    anchor.download = filename;
+  } else if (items.length === 1) {
+    const safeTitle = items[0].agenda.namaAgenda
+      ? items[0].agenda.namaAgenda.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 30)
+      : "Daftar_Hadir";
+    anchor.download = `Daftar_Hadir_${safeTitle}.xlsx`;
+  } else {
+    anchor.download = `Batch_Daftar_Hadir_${items.length}_Kegiatan.xlsx`;
+  }
+
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
   window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Service to generate and download a single Excel (.xlsx) file
+ */
+export async function exportDaftarHadirToExcel(
+  data: DaftarHadirData,
+  filename?: string
+): Promise<void> {
+  await exportMultipleDaftarHadirToExcel([data], filename);
 }

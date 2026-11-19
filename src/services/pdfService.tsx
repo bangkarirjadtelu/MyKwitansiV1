@@ -23,6 +23,8 @@ export interface PdfService {
   printMultipleUndanganPdf(items: import("../types").DataUndanganView[]): Promise<void>;
   downloadDaftarHadirPdf(data: import("../types").DaftarHadirData): Promise<void>;
   printDaftarHadirPdf(data: import("../types").DaftarHadirData): Promise<void>;
+  downloadMultipleDaftarHadirPdf(items: import("../types").DaftarHadirData[]): Promise<void>;
+  printMultipleDaftarHadirPdf(items: import("../types").DaftarHadirData[]): Promise<void>;
 }
 
 /** Sanitize string for use in Windows/Linux filenames */
@@ -363,6 +365,35 @@ export const pdfService: PdfService = {
     } catch (e) {
       console.error("[PdfService] Error printing Daftar Hadir PDF:", e);
       alert("Gagal memproses PDF Daftar Hadir untuk diprint.");
+    }
+  },
+
+  async downloadMultipleDaftarHadirPdf(items: import("../types").DaftarHadirData[]) {
+    if (items.length === 0) return;
+    if (items.length === 1) return this.downloadDaftarHadirPdf(items[0]);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { MultiDaftarHadirDocument } = await import("../documents/DaftarHadirDocument");
+      const blob = await pdf(<MultiDaftarHadirDocument items={items} />).toBlob();
+      const filename = `Batch_Daftar_Hadir_${items.length}_items.pdf`;
+      triggerDownload(blob, filename);
+    } catch (e) {
+      console.error("[PdfService] Bulk daftar hadir download error:", e);
+      alert("Gagal membuat PDF Daftar Hadir.");
+    }
+  },
+
+  async printMultipleDaftarHadirPdf(items: import("../types").DaftarHadirData[]) {
+    if (items.length === 0) return;
+    if (items.length === 1) return this.printDaftarHadirPdf(items[0]);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { MultiDaftarHadirDocument } = await import("../documents/DaftarHadirDocument");
+      const blob = await pdf(<MultiDaftarHadirDocument items={items} />).toBlob();
+      triggerPrint(blob);
+    } catch (e) {
+      console.error("[PdfService] Bulk daftar hadir print error:", e);
+      alert("Gagal memproses PDF untuk diprint.");
     }
   }
 };
