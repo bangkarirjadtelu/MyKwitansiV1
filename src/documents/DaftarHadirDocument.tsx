@@ -219,123 +219,139 @@ interface Props {
   data: DaftarHadirData;
 }
 
-export function DaftarHadirDocument({ data }: Props) {
+export function DaftarHadirPageItem({ data }: Props) {
   const { agenda, peserta } = data;
 
   return (
-    <Document title={`Daftar Hadir - ${agenda.namaAgenda || "Kegiatan"}`}>
-      <Page size="A4" style={styles.page}>
-        
-        {/* ── KOP SURAT TABLE (Full Outer Border) ── */}
-        <View style={styles.kopTable}>
-          {/* Logo Column */}
-          <View style={styles.kopLogoCol}>
-            <Image src={excelLogoBase64} style={styles.logoImg} />
+    <Page size="A4" style={styles.page}>
+      
+      {/* ── KOP SURAT TABLE (Full Outer Border) ── */}
+      <View style={styles.kopTable}>
+        {/* Logo Column */}
+        <View style={styles.kopLogoCol}>
+          <Image src={excelLogoBase64} style={styles.logoImg} />
+        </View>
+
+        {/* Right 4-row Column matching template */}
+        <View style={styles.kopRightCol}>
+          {/* Row 1 */}
+          <View style={styles.kopRow}>
+            <View style={styles.kopMiddleText}>
+              <Text style={{ fontFamily: "Times-Bold", fontSize: 10.5 }}>UNIVERSITAS TELKOM</Text>
+            </View>
+            <View style={styles.metaLabel}>
+              <Text>No. Formulir</Text>
+            </View>
+            <View style={styles.metaValue}>
+              <Text>{agenda.noFormulir || ""}</Text>
+            </View>
           </View>
 
-          {/* Right 4-row Column matching template */}
-          <View style={styles.kopRightCol}>
-            {/* Row 1 */}
-            <View style={styles.kopRow}>
-              <View style={styles.kopMiddleText}>
-                <Text style={{ fontFamily: "Times-Bold", fontSize: 10.5 }}>UNIVERSITAS TELKOM</Text>
-              </View>
-              <View style={styles.metaLabel}>
-                <Text>No. Formulir</Text>
-              </View>
-              <View style={styles.metaValue}>
-                <Text>{agenda.noFormulir || ""}</Text>
-              </View>
+          {/* Row 2 */}
+          <View style={styles.kopRow}>
+            <View style={styles.kopMiddleText}>
+              <Text style={{ fontSize: 8.5 }}>
+                Jl. Telekomunikasi No. 1 Terusan Buah Batu Bandung 40257
+              </Text>
             </View>
-
-            {/* Row 2 */}
-            <View style={styles.kopRow}>
-              <View style={styles.kopMiddleText}>
-                <Text style={{ fontSize: 8.5 }}>
-                  Jl. Telekomunikasi No. 1 Terusan Buah Batu Bandung 40257
-                </Text>
-              </View>
-              <View style={styles.metaLabel}>
-                <Text>Revisi</Text>
-              </View>
-              <View style={styles.metaValue}>
-                <Text>{agenda.revisi || ""}</Text>
-              </View>
+            <View style={styles.metaLabel}>
+              <Text>Revisi</Text>
             </View>
-
-            {/* Row 3 */}
-            <View style={styles.kopRow}>
-              <View style={styles.kopMiddleText}>
-                <Text style={{ fontSize: 8.5 }}></Text>
-              </View>
-              <View style={styles.metaLabel}>
-                <Text>Berlaku Efektif</Text>
-              </View>
-              <View style={styles.metaValue}>
-                <Text>{agenda.berlakuEfektif || ""}</Text>
-              </View>
+            <View style={styles.metaValue}>
+              <Text>{agenda.revisi || ""}</Text>
             </View>
+          </View>
 
-            {/* Row 4 */}
-            <View style={styles.kopRowLast}>
-              <View style={styles.kopMiddleText}>
-                <Text style={{ fontFamily: "Times-Bold", fontSize: 10 }}>Daftar Hadir</Text>
-              </View>
-              <View style={styles.metaLabel}>
-                <Text>Hal</Text>
-              </View>
-              <View style={styles.metaValue}>
-                <Text>{agenda.hal || ""}</Text>
-              </View>
+          {/* Row 3 */}
+          <View style={styles.kopRow}>
+            <View style={styles.kopMiddleText}>
+              <Text style={{ fontSize: 8.5 }}></Text>
+            </View>
+            <View style={styles.metaLabel}>
+              <Text>Berlaku Efektif</Text>
+            </View>
+            <View style={styles.metaValue}>
+              <Text>{agenda.berlakuEfektif || ""}</Text>
+            </View>
+          </View>
+
+          {/* Row 4 */}
+          <View style={styles.kopRowLast}>
+            <View style={styles.kopMiddleText}>
+              <Text style={{ fontFamily: "Times-Bold", fontSize: 10 }}>Daftar Hadir</Text>
+            </View>
+            <View style={styles.metaLabel}>
+              <Text>Hal</Text>
+            </View>
+            <View style={styles.metaValue}>
+              <Text>{agenda.hal || ""}</Text>
             </View>
           </View>
         </View>
+      </View>
 
-        {/* ── AGENDA TABLE (Full Outer Border) ── */}
-        <View style={styles.agendaTable}>
-          <View style={styles.agendaRow}>
-            <Text style={styles.agendaLabel}>Hari, Tanggal</Text>
-            <Text style={styles.agendaValue}>{agenda.hariTanggal}</Text>
-          </View>
-          <View style={styles.agendaRow}>
-            <Text style={styles.agendaLabel}>Agenda</Text>
-            <Text style={styles.agendaValue}>{agenda.namaAgenda}</Text>
-          </View>
-          <View style={styles.agendaRow}>
-            <Text style={styles.agendaLabel}>Tempat</Text>
-            <Text style={styles.agendaValue}>{agenda.tempat}</Text>
-          </View>
-          <View style={styles.agendaRowLast}>
-            <Text style={styles.agendaLabel}>Waktu</Text>
-            <Text style={styles.agendaValue}>{agenda.waktu}</Text>
-          </View>
+      {/* ── AGENDA TABLE (Full Outer Border) ── */}
+      <View style={styles.agendaTable}>
+        <View style={styles.agendaRow}>
+          <Text style={styles.agendaLabel}>Hari, Tanggal</Text>
+          <Text style={styles.agendaValue}>{agenda.hariTanggal}</Text>
+        </View>
+        <View style={styles.agendaRow}>
+          <Text style={styles.agendaLabel}>Agenda</Text>
+          <Text style={styles.agendaValue}>{agenda.namaAgenda}</Text>
+        </View>
+        <View style={styles.agendaRow}>
+          <Text style={styles.agendaLabel}>Tempat</Text>
+          <Text style={styles.agendaValue}>{agenda.tempat}</Text>
+        </View>
+        <View style={styles.agendaRowLast}>
+          <Text style={styles.agendaLabel}>Waktu</Text>
+          <Text style={styles.agendaValue}>{agenda.waktu}</Text>
+        </View>
+      </View>
+
+      {/* ── ATTENDANCE TABLE (Full Outer Border) ── */}
+      <View style={styles.table}>
+        {/* Header Row */}
+        <View style={styles.tableHeaderRow} fixed>
+          <Text style={styles.thNomor}>Nomor</Text>
+          <Text style={styles.thNama}>Nama</Text>
+          <Text style={styles.thCheckin}>Tanggal Check-in</Text>
+          <Text style={styles.thStatus}>Status</Text>
         </View>
 
-        {/* ── ATTENDANCE TABLE (Full Outer Border) ── */}
-        <View style={styles.table}>
-          {/* Header Row */}
-          <View style={styles.tableHeaderRow} fixed>
-            <Text style={styles.thNomor}>Nomor</Text>
-            <Text style={styles.thNama}>Nama</Text>
-            <Text style={styles.thCheckin}>Tanggal Check-in</Text>
-            <Text style={styles.thStatus}>Status</Text>
-          </View>
+        {/* Data Rows */}
+        {peserta.map((p, idx) => {
+          const isLast = idx === peserta.length - 1;
+          return (
+            <View key={p.id} style={isLast ? styles.tableRowLast : styles.tableRow} wrap={false}>
+              <Text style={styles.tdNomor}>{p.nomor}</Text>
+              <Text style={styles.tdNama}>{p.nama}</Text>
+              <Text style={styles.tdCheckin}>{p.tanggalCheckin}</Text>
+              <Text style={styles.tdStatus}>{p.status || "CheckIn"}</Text>
+            </View>
+          );
+        })}
+      </View>
 
-          {/* Data Rows */}
-          {peserta.map((p, idx) => {
-            const isLast = idx === peserta.length - 1;
-            return (
-              <View key={p.id} style={isLast ? styles.tableRowLast : styles.tableRow} wrap={false}>
-                <Text style={styles.tdNomor}>{p.nomor}</Text>
-                <Text style={styles.tdNama}>{p.nama}</Text>
-                <Text style={styles.tdCheckin}>{p.tanggalCheckin}</Text>
-                <Text style={styles.tdStatus}>{p.status || "CheckIn"}</Text>
-              </View>
-            );
-          })}
-        </View>
+    </Page>
+  );
+}
 
-      </Page>
+export function DaftarHadirDocument({ data }: Props) {
+  return (
+    <Document title={`Daftar Hadir - ${data.agenda.namaAgenda || "Kegiatan"}`}>
+      <DaftarHadirPageItem data={data} />
+    </Document>
+  );
+}
+
+export function MultiDaftarHadirDocument({ items }: { items: DaftarHadirData[] }) {
+  return (
+    <Document title={`Batch Daftar Hadir - ${items.length} Dokumen`}>
+      {items.map((item, idx) => (
+        <DaftarHadirPageItem key={idx} data={item} />
+      ))}
     </Document>
   );
 }

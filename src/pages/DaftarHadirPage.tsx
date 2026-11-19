@@ -15,10 +15,10 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { daftarHadirService } from "../services/daftarHadirService";
 import { pdfService } from "../services/pdfService";
-import { exportDaftarHadirToExcel } from "../services/excelDaftarHadirService";
+import { exportDaftarHadirToExcel, exportMultipleDaftarHadirToExcel } from "../services/excelDaftarHadirService";
 import type { DaftarHadirRecord, DaftarHadirAgenda, DaftarHadirPeserta, DaftarHadirData } from "../types/daftarHadir";
 import { excelLogoBase64 } from "../assets/excelLogoBase64";
-import { formatAdminName } from "../utils/formatters";
+import { formatAdminName, formatDateFullIndo } from "../utils/formatters";
 
 const { color } = tokens;
 
@@ -37,8 +37,61 @@ const TABLE_HEADERS = [
   "Aksi",
 ];
 
+export const PRESET_ALL_SDM = [
+  "DANAN SURYADI",
+  "TOUFAN DIANSYAH TAMBUNAN",
+  "RESHA AKBAR",
+  "FIERA WARDHANI GLADISA",
+  "AAN ARDIYAN MAJID",
+  "ADILLA FALASIFAH",
+  "AGNESSYA NURREZQIA",
+  "AGNY NADYA YUSNIAULIA",
+  "ALAFIA SYIFA UTAMI",
+  "ALISHA MAISAN FALAH",
+  "ASEP TARYANA",
+  "ASYA AZHAR FATHINA",
+  "AULIA FITRAH FAJRIANI",
+  "AYU CENDRAKASIH",
+  "DHIALDI WIBI RADITYA",
+  "ESYA NURDIANI",
+  "EVA NURMALA",
+  "FATHARANI EKA PUTRI",
+  "FIRJATULLAH NASTARI",
+  "GHEAVIRA MELLINIA",
+  "IDA BAGUS UTTARAYANA RAKE SANDJAJA",
+  "JENG AYU NING TYAS",
+  "LAILY DWI ANGGARAINI",
+  "MAHARANI",
+  "MANGGARA CAHAYA YUDHA",
+  "MUHAMAD FIKRY SAPUTRA",
+  "MUHAMMAD FAILLASUF FAIZ",
+  "MUHAMMAD GALUH YUDHISTIRA",
+  "MUHAMMAD HANIF SURYANA",
+  "NAYA ASTRI MAGHFIRA",
+  "NURHASANAH",
+  "RIZKY NUR F",
+  "RIZQY ADITYA",
+  "SAMUEL ARJUNA QUEEN BERNARD",
+  "SHELLA LORENSYA",
+  "SYINTYA LUTHFIANY",
+  "UTAMI KUSUMA DEWI",
+  "WAHYU NURROSYID",
+  "WIDIA SARA",
+  "WIWIN RATNA SARI",
+].join("\n");
+
+export const PRESET_BANG_KARIR = [
+  "AULIA FITRAH FAJRIANI",
+  "WAHYU NURROSYID",
+  "GHEAVIRA MELLINIA",
+  "AGNY NADYA YUSNIAULIA",
+  "WIWIN RATNA SARI",
+  "TOUFAN DIANSYAH TAMBUNAN",
+  "ASYA AZHAR FATHINA",
+].join("\n");
+
 const DEFAULT_AGENDA: DaftarHadirAgenda = {
-  hariTanggal: "Jumat, 15 Oktober 2026",
+  hariTanggal: formatDateFullIndo(new Date().toISOString().slice(0, 10)),
   namaAgenda: "Rapat ….",
   tempat: "Ruang Rapat SDM Lantai 2 Gedung E. Ruang Kultubai",
   waktu: "08.00 - 13.00 WIB",
@@ -50,15 +103,51 @@ const DEFAULT_AGENDA: DaftarHadirAgenda = {
   hal: "",
 };
 
-const DEFAULT_NAMES_TEXT = [
-  "AULIA FITRAH FAJRIANI",
-  "WAHYU NURROSYID",
-  "GHEAVIRA MELLINIA",
-  "AGNY NADYA YUSNIAULIA",
-  "WIWIN RATNA SARI",
-  "TOUFAN DIANSYAH TAMBUNAN",
-  "ASYA AZHAR FATHINA",
-].join("\n");
+const DEFAULT_NAMES_TEXT = PRESET_BANG_KARIR;
+
+function toIsoDate(val: string): string {
+  if (!val) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
+  const match = val.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+  if (match) {
+    const day = match[1].padStart(2, "0");
+    const mName = match[2].toLowerCase();
+    const year = match[3];
+    const monthMap: Record<string, string> = {
+      januari: "01", jan: "01",
+      februari: "02", feb: "02",
+      maret: "03", mar: "03",
+      april: "04", apr: "04",
+      mei: "05", may: "05",
+      juni: "06", jun: "06",
+      juli: "07", jul: "07",
+      agustus: "08", ags: "08", aug: "08",
+      september: "09", sep: "09",
+      oktober: "10", okt: "10", oct: "10",
+      november: "11", nov: "11",
+      desember: "12", des: "12", dec: "12",
+    };
+    const m = monthMap[mName];
+    if (m) return `${year}-${m}-${day}`;
+  }
+  return "";
+}
+
+function toTimeInputFormat(timeStr: string): string {
+  if (!timeStr) return "08:00";
+  const clean = timeStr.trim().replace(/[^\d:.]/g, "");
+  const parts = clean.includes(":") ? clean.split(":") : clean.split(".");
+  if (parts.length >= 2) {
+    const h = parts[0].padStart(2, "0");
+    const m = parts[1].padStart(2, "0");
+    return `${h}:${m}`;
+  } else if (parts.length === 1 && parts[0].length >= 3) {
+    const h = parts[0].slice(0, 2).padStart(2, "0");
+    const m = parts[0].slice(2, 4).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+  return "08:00";
+}
 
 function extractDateStr(hariTanggal: string): string {
   const parts = hariTanggal.split(",");
@@ -368,6 +457,29 @@ export function DaftarHadirPage({ onToast }: Props) {
     onToast?.(`Berhasil memproses ${newPeserta.length} peserta.`);
   };
 
+  // Form: apply preset list of names (ALL SDM / BANG KARIR)
+  const applyPresetNames = (text: string, label: string) => {
+    setFormBulkText(text);
+    const dateStr = extractDateStr(formAgenda.hariTanggal);
+    const startTime = formAgenda.waktuMulai || "08.00";
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    const times = generateCheckinTimes(dateStr, startTime, lines.length, false);
+    const newPeserta: DaftarHadirPeserta[] = lines.map((name, idx) => ({
+      id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+      nomor: idx + 1,
+      nama: name,
+      tanggalCheckin: times[idx] || `${dateStr}, ${startTime}:15`,
+      status: "CheckIn",
+    }));
+
+    setFormPeserta(newPeserta);
+    onToast?.(`Preset ${label} (${newPeserta.length} nama) berhasil dimuat.`);
+  };
+
   // Form: shuffle names from bulk paste textarea
   const handleShuffleBulkNames = () => {
     const lines = formBulkText
@@ -516,6 +628,43 @@ export function DaftarHadirPage({ onToast }: Props) {
     }
   };
 
+  // Bulk export helpers
+  const exportSelectedToExcel = async () => {
+    const selected = records.filter((r) => selectedIds.has(r.id));
+    if (selected.length === 0) return;
+    try {
+      await exportMultipleDaftarHadirToExcel(
+        selected.map((r) => ({
+          agenda: r.agenda,
+          peserta: r.peserta,
+          isSimulation: r.isSimulation ?? true,
+        }))
+      );
+      onToast?.(`${selected.length} data daftar hadir berhasil diekspor ke Excel.`);
+    } catch (e) {
+      console.error(e);
+      onToast?.("Gagal mengunduh Excel.");
+    }
+  };
+
+  const exportSelectedToPdf = async () => {
+    const selected = records.filter((r) => selectedIds.has(r.id));
+    if (selected.length === 0) return;
+    try {
+      await pdfService.downloadMultipleDaftarHadirPdf(
+        selected.map((r) => ({
+          agenda: r.agenda,
+          peserta: r.peserta,
+          isSimulation: r.isSimulation ?? true,
+        }))
+      );
+      onToast?.(`${selected.length} data PDF berhasil diunduh.`);
+    } catch (e) {
+      console.error(e);
+      onToast?.("Gagal mengunduh PDF.");
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -539,10 +688,7 @@ export function DaftarHadirPage({ onToast }: Props) {
               {/* Bulk actions */}
               {selectedIds.size > 0 && (
                 <button
-                  onClick={() => {
-                    const first = records.find((r) => selectedIds.has(r.id));
-                    if (first) exportRecordToExcel(first);
-                  }}
+                  onClick={exportSelectedToExcel}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer flex-shrink-0"
                 >
                   {Ico.download("w-3.5 h-3.5 text-white")}
@@ -552,10 +698,7 @@ export function DaftarHadirPage({ onToast }: Props) {
 
               {selectedIds.size > 0 && (
                 <button
-                  onClick={() => {
-                    const first = records.find((r) => selectedIds.has(r.id));
-                    if (first) exportRecordToPdf(first);
-                  }}
+                  onClick={exportSelectedToPdf}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors cursor-pointer flex-shrink-0"
                 >
                   {Ico.download("w-3.5 h-3.5 text-white")}
@@ -661,15 +804,6 @@ export function DaftarHadirPage({ onToast }: Props) {
                     {Ico.eye("w-3.5 h-3.5")}
                   </button>
 
-                  {/* Excel */}
-                  <button
-                    onClick={() => exportRecordToExcel(row)}
-                    title="Unduh Excel (.xlsx)"
-                    className="p-1.5 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
-                  >
-                    {Ico.download("w-3.5 h-3.5 text-emerald-600")}
-                  </button>
-
                   {/* PDF */}
                   <button
                     onClick={() => exportRecordToPdf(row)}
@@ -767,12 +901,21 @@ export function DaftarHadirPage({ onToast }: Props) {
                     Hari & Tanggal Kegiatan
                   </label>
                   <input
-                    type="text"
-                    value={formAgenda.hariTanggal}
-                    onChange={(e) => handleHariTanggalChange(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#8B1E1E]"
-                    placeholder="Contoh: Jumat, 15 Oktober 2026"
+                    type="date"
+                    value={toIsoDate(formAgenda.hariTanggal)}
+                    onChange={(e) => {
+                      const iso = e.target.value;
+                      if (iso) {
+                        const indo = formatDateFullIndo(iso);
+                        handleHariTanggalChange(indo);
+                      }
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-xs text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#8B1E1E] cursor-pointer"
                   />
+                  <div className="text-[11px] text-gray-500 mt-1 flex items-center justify-between">
+                    <span>Teks di Dokumen:</span>
+                    <span className="font-semibold text-gray-800">{formAgenda.hariTanggal || "-"}</span>
+                  </div>
                 </div>
 
                 <div>
@@ -805,21 +948,19 @@ export function DaftarHadirPage({ onToast }: Props) {
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Waktu Mulai</label>
                     <input
-                      type="text"
-                      value={formAgenda.waktuMulai}
-                      onChange={(e) => handleTimeChange("waktuMulai", e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white"
-                      placeholder="08.00"
+                      type="time"
+                      value={toTimeInputFormat(formAgenda.waktuMulai || "08.00")}
+                      onChange={(e) => handleTimeChange("waktuMulai", e.target.value.replace(":", "."))}
+                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#8B1E1E] cursor-pointer"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Waktu Selesai</label>
                     <input
-                      type="text"
-                      value={formAgenda.waktuSelesai}
-                      onChange={(e) => handleTimeChange("waktuSelesai", e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white"
-                      placeholder="13.00 WIB"
+                      type="time"
+                      value={toTimeInputFormat(formAgenda.waktuSelesai || "13.00")}
+                      onChange={(e) => handleTimeChange("waktuSelesai", e.target.value.replace(":", "."))}
+                      className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#8B1E1E] cursor-pointer"
                     />
                   </div>
                 </div>
@@ -833,6 +974,7 @@ export function DaftarHadirPage({ onToast }: Props) {
                     value={formAgenda.waktu}
                     onChange={(e) => setFormAgenda({ ...formAgenda, waktu: e.target.value })}
                     className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 bg-gray-100"
+                    placeholder="Contoh: 08.00 - 13.00 WIB"
                   />
                 </div>
 
@@ -893,7 +1035,7 @@ export function DaftarHadirPage({ onToast }: Props) {
               {/* Kolom Kanan: Bulk Paste Textarea */}
               <div className="space-y-3 p-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
+                  <div className="flex flex-wrap items-center justify-between pb-2 border-b border-gray-200 mb-2 gap-1.5">
                     <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">
                       2. Tempel Nama Peserta (Bulk Paste)
                     </h4>
@@ -907,29 +1049,28 @@ export function DaftarHadirPage({ onToast }: Props) {
                         {Ico.shuffle("w-3 h-3")}
                         <span>Acak Nama</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormBulkText(DEFAULT_NAMES_TEXT);
-                          const dateStr = extractDateStr(formAgenda.hariTanggal);
-                          const startTime = formAgenda.waktuMulai || "08.00";
-                          const lines = DEFAULT_NAMES_TEXT.split("\n");
-                          const times = generateCheckinTimes(dateStr, startTime, lines.length, false);
-                          setFormPeserta(
-                            lines.map((name, idx) => ({
-                              id: `p-${idx + 1}`,
-                              nomor: idx + 1,
-                              nama: name,
-                              tanggalCheckin: times[idx],
-                              status: "CheckIn",
-                            }))
-                          );
-                        }}
-                        className="text-[11px] text-[#8B1E1E] hover:underline font-semibold cursor-pointer"
-                      >
-                        Contoh
-                      </button>
                     </div>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 mb-2.5 bg-white p-2 rounded-lg border border-gray-200 shadow-xs">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase mr-1">Preset:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetNames(PRESET_ALL_SDM, "ALL SDM")}
+                      className="inline-flex items-center gap-1 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer shadow-xs active:scale-95"
+                      title="Isi nama ALL SDM (40 orang)"
+                    >
+                      <span>👥 ALL SDM (40)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetNames(PRESET_BANG_KARIR, "BANG KARIR")}
+                      className="inline-flex items-center gap-1 text-xs text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer shadow-xs active:scale-95"
+                      title="Isi nama BANG KARIR (7 orang)"
+                    >
+                      <span>⚡ BANG KARIR (7)</span>
+                    </button>
                   </div>
 
                   <textarea

@@ -24,5 +24,5 @@ export const undanganService = USE_MOCK ? mockUndanganService : supabaseUndangan
 
 // PDF Service remains the same (it doesn't have a DB backend, it just generates files)
 export { pdfService } from "./pdfService";
-export { exportDaftarHadirToExcel } from "./excelDaftarHadirService";
+export { exportDaftarHadirToExcel, exportMultipleDaftarHadirToExcel } from "./excelDaftarHadirService";
 export { daftarHadirService } from "./daftarHadirService";
